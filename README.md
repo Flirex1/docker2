@@ -20,7 +20,15 @@ Docker Compose используется для одновременного уп
 
 При выполнении задания используйте подсеть 172.22.0.0.
 Ваша подсеть должна называться: <ваши фамилия и инициалы>-my-netology-hw.
-
+#### Ответ
+version: "3"
+services:
+networks:
+  PerfilovDI-my-netology-hw:
+ driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
 ---
 
 ### Задание 3 
@@ -32,7 +40,27 @@ Docker Compose используется для одновременного уп
 3. Задайте пароль пользователя postgres, как <ваши фамилия и инициалы>12!3!!
 4. Пример названия контейнера: ivanovii-netology-db.
 5. Назначьте для данного контейнера статический IP из подсети 172.22.0.0/24.
+#### Ответ
+version: "3"
+services:
 
+  netology-db:
+    image: postgres:latest
+    container_name: Perfilov-netology-db
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pg_data:/var/lib/postgresql/data/pgdata
+    environment:
+      POSTGRES_PASSWORD: PerfilovDI12!3!!
+      POSTGRES_USER: postgres
+      POSTGRES_DB: PerfilovDI-netology_db
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      PGDATA: /var/lib/postgresql/data/pgdata 
+    networks:
+      PerfilovDI-my-netology-hw:
+        ipv4_address: 172.22.0.2
 ---
 
 ### Задание 4 
@@ -99,7 +127,26 @@ services:
 1. Установите Zabbix Server с именем контейнера <ваши фамилия и инициалы>-zabbix-netology. 
 2. Настройте его подключение к вашему СУБД.
 3. Назначьте для данного контейнера статический IP из подсети 172.22.0.0/24.
-
+#### Ответ
+version: "3"
+services:
+zabbix-server:
+    image: zabbix/zabbix-server-pgsql
+    links:
+      - netology-db
+    container_name: PerfilovDI-netology-zabbix
+    environment:
+DB_SERVER_HOST: '172.22.0.2'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: PerfilovDI12!3!!
+    ports:
+      - "10051:10051"
+    networks:
+      PerfilovDI-my-netology-hw:
+        ipv4_address: 172.22.0.4
+    restart: always
+    depends_on:
+      - netology-db
 ---
 
 ### Задание 6
@@ -109,7 +156,36 @@ services:
 1. Установите Zabbix Frontend с именем контейнера <ваши фамилия и инициалы>-netology-zabbix-frontend. 
 2. Настройте его подключение к вашему СУБД.
 3. Назначьте для данного контейнера статический IP из подсети 172.22.0.0/24.
+#### Ответ
+version: "3"
+services:
+zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql
+    container_name: zabbix-web
+    hostname: zabbix-web
+    restart: always
+    environment:
+      DB_SERVER_HOST: netology-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: PerfilovDI12!3!!
+      ZBX_SERVER_HOST: zabbix-server
+      PHP_TZ: "Europe/Moscow"
+    ports:
+      - 80:8080
+      - 443:8443
+    networks:
+      PerfilovDI-my-netology-hw:
+        ipv4_address: 172.22.0.5
+    depends_on:
+      - netology-db
+      - zabbix-server
 
+networks:
+  PerfilovDI-my-netology-hw:
+ driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
 ---
 
 ### Задание 7 
